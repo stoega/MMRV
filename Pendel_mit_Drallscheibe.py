@@ -98,7 +98,8 @@ reload(EL)  # Needed to catch changes
 
 Te = 10
 DT = 0.1
-X0 = [-3.1415/2, 0, 0, 0]
+# X0 = [-3.1415/2, 0, 0, 0]
+X0 = [0, 0, 0, 0]
 
 Sol_L = solve_ivp(EL.EL_func, [0, Te], X0, rtol=1e-7,
                   t_eval=arange(0, Te + DT, DT))
@@ -161,3 +162,16 @@ b = f_lin.jacobian(sp.Matrix([M_]))
 b = sp.simplify(b)
 
 display(A, b)
+
+# In[7]
+
+#Eigenvalues
+evs = (M.inv()*RhsE.jacobian(Sys.x)).eigenvals()
+for ev in evs:
+    print(sp.latex(ev.simplify()))
+
+# haltemoment
+M_halt = sp.solve((M.inv()*RhsE)[0], M_)[0]
+print(sp.latex(M_halt))
+
+
