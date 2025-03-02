@@ -31,6 +31,8 @@ Sys = EL_Vars('t', ['\\varphi', '\\theta'])
 # m1 = Stab, m2 = Scheibe
 m1, m2, g, l, C = sp.symbols('m_{Stab} m_{Scheibe} g l C')
 
+M_ = sp.symbols('M')
+
 # Ortsvektor - Schwerpunkt Stab
 r_SStab = Dm(Sys.x[0]) * sp.Matrix([l/2, 0])
 v_SStab = r_SStab.applyfunc(Sys.ttd)
@@ -41,7 +43,7 @@ v_SScheibe = r_SScheibe.applyfunc(Sys.ttd)
 
 # Kinetische Energie
 E_kinStab = m1/2 * (v_SStab.T * v_SStab)[0] + 1/2 * 1/12 * m1 * l**2 * Sys.v[0]**2
-E_kinScheibe = m2/2 * (v_SScheibe.T * v_SScheibe)[0] + 1/2 * C * (Sys.v[0]+Sys.v[1])**2
+E_kinScheibe = m2/2 * (v_SScheibe.T * v_SScheibe)[0] + 1/2 * C * (Sys.v[0] + Sys.v[1])**2
 
 E_kin = E_kinStab + E_kinScheibe
 E_kin = sp.simplify(E_kin)
@@ -55,8 +57,8 @@ E_pot = E_potStab + E_potScheibe
 E_pot = sp.simplify(E_pot)
 
 # Lagrangian und Bewegungsgleichung
-L = E_kin - E_pot
-res = EL_eq(L, Sys)
+L = E_kin - E_pot + M_*Sys.x[1] # Hier wird Motormoment eingebracht
+res = EL_eq(L, Sys).subs(1.0, 1)
 display(res)
 
 
@@ -70,34 +72,37 @@ m2_ = (0.075**2 * sp.pi * 0.01 * 2700).evalf()
 # I = 1/2 * m * r^2
 C_ = 1/2 * m2_ * 0.075**2
 # display(m2_, C_)
+display(m2_)
 
+# In[]
 
-sdic = {m1: .25, g: 9.81, l: .3, m2: m2_, C: C_}
+# M = 0 für Simulation
+sdic = {m1: .1, g: 9.81, l: .3, m2: m2_, C: C_, M_: 0}
 
 with open('EL_func.py', 'w') as f:
-    Prog_EL_py(M.subs(sdic), RhsE.subs(sdic), Sys, 'x', f=f)
+     Prog_EL_py(M.subs(sdic), RhsE.subs(sdic), Sys, 'x', f=f)
 
 # In[3]
 
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from numpy import arange
+from importlib import reload
 
 
 # In[4]
 
 # Plotten der Bewegung
-from EL_func import EL_func
-# from EH_func import EH_func
+import EL_func as EL
+reload(EL)  # Needed to catch changes
 
 Te = 10
 DT = 0.1
-X0 = [-0, 0, 0, 0]
-EL_func(0, X0)
+X0 = [-3.1415/2, 0, 0, 0]
 
-Sol_L = solve_ivp(EL_func, [0, Te], X0, rtol=1e-7,
+Sol_L = solve_ivp(EL.EL_func, [0, Te], X0, rtol=1e-7,
                   t_eval=arange(0, Te + DT, DT))
-display(len(Sol_L))
+# display(Sol_L)
 plt.plot(Sol_L.t, Sol_L.y[0], 'r', label='$\\varphi(t)$')
 plt.plot(Sol_L.t, Sol_L.y[1], 'g', label='$\\theta(t)$')
 plt.plot(Sol_L.t, Sol_L.y[2], 'b', label='$\dot{\\varphi}(t)$')
@@ -132,5 +137,27 @@ display(f"Es ist ersichtlich, dass die Ruhelagen von theta unabhängig sind (the
 
 # In[6]
 
-# Linearisierung
-# display(El_func(0, x0))
+# Linearisierung um [pi/2, 0]
+subs_RL[Sys.x[0]] = sol_RL[0][0]
+subs_RL[Sys.x[1]] = sol_RL[0][1]
+display(subs_RL)
+
+# Aufstellen x_dot = f(x, u)
+f = (M.inv()*RhsE).subs(1.0, 1)
+display(f)
+
+# Linearisierungsparameter
+delta_phi, delta_theta = sp.symbols('\\Delta{\\varphi} \\Delta{\\theta}') 
+delta_x = sp.Matrix([delta_phi, delta_theta])
+
+# f_lin = f(x0) + f'(x0) * delta_x
+f_lin = f.subs(subs_RL) + f.jacobian(Sys.x).subs(subs_RL) * delta_x
+display(f_lin)
+
+# Zustandsraumdarstellung
+A = f_lin.jacobian(delta_x)
+A = sp.simplify(A)
+b = f_lin.jacobian(sp.Matrix([M_]))
+b = sp.simplify(b)
+
+display(A, b)

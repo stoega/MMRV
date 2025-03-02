@@ -104,7 +104,7 @@ def Prog_EL_py(M, R, Vars, x, f=stdout):
     print(f'    M = zeros(({n}, {n}))', file=f)
     print(f'    R = zeros({n})', file=f)
     for i in range(n):
-        for j in range(i, n):
+        for j in range(n):  # Modified from range(i, n) -> range(n) for subdiagonal
             print(f'    M[{i}, {j}] = {M[i,j].subs(sdic1)}', file=f)
     for i in range(0, n):
         print(f'    R[{i}] = {R[i].subs(sdic)}', file=f)
