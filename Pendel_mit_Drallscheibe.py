@@ -70,7 +70,7 @@ Prog_EL_py(M, RhsE, Sys, 'x')
 # m = r^2 * pi * h*rho
 m2_ = (0.075**2 * sp.pi * 0.01 * 2700).evalf()
 # I = 1/2 * m * r^2
-C_ = 1/2 * m2_ * 0.075**2
+C_ = 1/2 * m2_ * 0.075**2 # 1.3e-3
 # display(m2_, C_)
 display(m2_ ,C_)
 
@@ -98,7 +98,7 @@ reload(EL)  # Needed to catch changes
 
 Te = 10
 DT = 0.1
-X0 = [-3.1415/2, 0, 0, 0]
+X0 = [3.1415/2, 0, 0, 0]
 # X0 = [0, 0, 0, 0]
 
 Sol_L = solve_ivp(EL.EL_func, [0, Te], X0, rtol=1e-7,
@@ -199,8 +199,9 @@ n = A.shape[0]
 sys = ctrl.ss(sp.matrix2numpy(A.subs(params)), sp.matrix2numpy(b.subs(params)), np.eye(n), np.zeros((n, 1)))
 
 x0 = np.array(n*[[0]])
+x0[0, 0] = 0
 xN = np.array(n*[[0]], np.float64)
-xN[0, 0] = 10*np.pi/180.0    # TODO
+xN[0, 0] = 5 * np.pi / 180    # TODO
 
 # Abtastsystem
 
@@ -209,7 +210,7 @@ sysd = ctrl.sample_system(sys, T, method='zoh')
 
 # Schrittanzahl
 
-N = 300      # Anzahl der Schritte
+N = 30      # Anzahl der Schritte
 
 # l_1 mit u Begrenzung
 
@@ -247,8 +248,11 @@ HH = [Up[i] - Um[i] - u for i, u in enumerate(U)]
 Aeq, beq = sp.linear_eq_to_matrix(HH + Gln_v_theta + Gln_xn, var)
 
 # Gütefunktional
-
-c, dummy = sp.linear_eq_to_matrix([umax], var)
+linf = True
+if linf:
+	c, _ = sp.linear_eq_to_matrix([umax], var)
+else: # l1
+	c, _ = sp.linear_eq_to_matrix(sum(Up + Um), var)
 
 # Ungleichungen für u_i
 
@@ -257,14 +261,15 @@ Auq, buq = sp.linear_eq_to_matrix(Ugln, var)
 
 # Schranken der Optimierungsvariablen
 
-Limit_u = 10 # Nm
-Limit_v_theta = 100000 / 60 * 2 * np.pi   # rad/s
+Limit_u = 1 # Nm
+Limit_v_theta = 45  # rad/s
 bounds = [(-Limit_u, Limit_u) for i in U] + [(0, None) for i in Up + Um] +\
             [(0, None)] + [(-Limit_v_theta, Limit_v_theta) for i in V_theta]
 
 # Lineares Programm und Berechnung der optimalen Lösung
-
 res = linprog(c, A_eq=Aeq, b_eq=beq, A_ub=Auq, b_ub=buq, bounds=bounds)
+if res.x is None:
+	raise Exception("no solution found")
 
 # Optimale Stellfolge und X-Folge
 
@@ -283,27 +288,46 @@ plt.legend()
 plt.title('$l_\\infty$' + '-optimal mit v Begrenzung')
 plt.grid(True)
 plt.xlim(0, N)
+plt.savefig("u.pdf")
 plt.show()
 
 plt.figure()
-for i in range(n//2):
-    plt.plot(range(N + 1), Xopt[i], col[i + 1], label=f'$x_{i}$')
+plt.plot(range(N+1), Xopt[0], col[0], label=f'$x_{0}$')
 plt.xlabel('n  (' + '$T_a = $' + str(T) + ')')
-plt.ylabel('X')
-plt.legend()
+plt.ylabel('$\\varphi$ / °')
 plt.title('$l_\\infty$' + '-optimal mit v Begrenzung')
 plt.grid(True)
-plt.xlim(0, N)
+plt.xlim(0, N+1)
+plt.savefig("phi.pdf")
 plt.show()
 
 plt.figure()
-for i in range(n//2,n):
-    plt.plot(range(N + 1), Xopt[i], col[i + 1], label=f'$x_{i}$')
+plt.plot(range(N+1), Xopt[1], col[1], label=f'$x_{1}$')
 plt.xlabel('n  (' + '$T_a = $' + str(T) + ')')
-plt.ylabel('V')
-plt.legend()
+plt.ylabel('$\\theta$ / °')
 plt.title('$l_\\infty$' + '-optimal mit v Begrenzung')
 plt.grid(True)
-plt.xlim(0, N)
+plt.xlim(0, N+1)
+plt.savefig("theta.pdf")
+plt.show()
+
+plt.figure()
+plt.plot(range(N+1), Xopt[2], col[2], label=f'$x_{2}$')
+plt.xlabel('n  (' + '$T_a = $' + str(T) + ')')
+plt.ylabel('$\\dot{\\varphi}$ / $°s^{-1}$')
+plt.title('$l_\\infty$' + '-optimal mit v Begrenzung')
+plt.grid(True)
+plt.xlim(0, N+1)
+plt.savefig("phidot.pdf")
+plt.show()
+
+plt.figure()
+plt.plot(range(N+1), Xopt[3], col[3], label=f'$x_{3}$')
+plt.xlabel('n  (' + '$T_a = $' + str(T) + ')')
+plt.ylabel('$\\dot{\\theta}$ / $°s^{-1}$')
+plt.title('$l_\\infty$' + '-optimal mit v Begrenzung')
+plt.grid(True)
+plt.xlim(0, N+1)
+plt.savefig("thetadot.pdf")
 plt.show()
 # %%
