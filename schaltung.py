@@ -580,17 +580,18 @@ if res:
     c = sp.Matrix([-R2, R2])
     d = sp.Matrix([-R2/ R1])
     
-    subs = {R2:1000, R1: 100, 
-						sp.Symbol("L_{L1}"): 1e1, 
+    subs = {R2:1000, R1: 100,
+						sp.Symbol("L_{L1}"): 1e1,
 						sp.Symbol("L_{L2}"):10e-1,
 						sp.Symbol("Uq_{In}"):1,
 						sp.Symbol("R_{R3}"):47,
 						sp.Symbol("R_{R4}"):47}
     # sys = ctrl.StateSpace(A.subs(subs), b.subs(subs), c.subs(subs), d.subs(subs))
     sys = ctrl.ss(sp.matrix2numpy(A.subs(subs)),
-									-sp.matrix2numpy(b.subs(subs)),
+									sp.matrix2numpy(b.subs(subs)),
 									sp.matrix2numpy(c.subs(subs)).T,
 									sp.matrix2numpy(d.subs(subs)))
 		
-    ctrl.bode_plot(sys, (1, 0.1), dB=True)
+    plt = ctrl.bode_plot(sys, (1, 1e6), dB=True)
+		
 
