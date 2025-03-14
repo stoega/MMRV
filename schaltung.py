@@ -533,9 +533,14 @@ Uquelle(N, 'In', 'M', 'E')
 
 Knoten(N, 'K')
 Knoten(N, 'A')
+Knoten(N, 'X')
+Knoten(N, 'Y')
 
-Widerstand(N, 'R1', 'E', 'K')
-Widerstand(N, 'R2', 'K', 'A')
+Widerstand(N, 'R1', 'E', 'X')
+Widerstand(N, 'R2', 'K', 'Y')
+
+Widerstand(N, 'R3', 'X', 'K')
+Widerstand(N, 'R4', 'Y', 'A')
 
 Iverstärker(N, 'OPV', 'K', 'M', 'M', 'A')
 
@@ -544,8 +549,8 @@ Iverstärker(N, 'OPV', 'K', 'M', 'M', 'A')
 
 # Kapazität(N, 'C1', 'E', 'K')
 # Kapazität(N, 'C2', 'K', 'A')
-Induktivität(N, 'L1', 'E', 'K')
-Induktivität(N, 'L2', 'K', 'A')
+Induktivität(N, 'L1', 'E', 'X')
+Induktivität(N, 'L2', 'K', 'Y')
 
 res = N.Eleverbindungen()
 display(res)
@@ -575,14 +580,17 @@ if res:
     c = sp.Matrix([-R2, R2])
     d = sp.Matrix([-R2/ R1])
     
-    subs = {R2:1000, R1: 100, sp.Symbol("L_{L1}"): 1e-3, 
-						sp.Symbol("L_{L2}"):10e-3,
-						sp.Symbol("Uq_{In}"):1}
+    subs = {R2:1000, R1: 100, 
+						sp.Symbol("L_{L1}"): 1e1, 
+						sp.Symbol("L_{L2}"):10e-1,
+						sp.Symbol("Uq_{In}"):1,
+						sp.Symbol("R_{R3}"):47,
+						sp.Symbol("R_{R4}"):47}
     # sys = ctrl.StateSpace(A.subs(subs), b.subs(subs), c.subs(subs), d.subs(subs))
     sys = ctrl.ss(sp.matrix2numpy(A.subs(subs)),
-									sp.matrix2numpy(b.subs(subs)),
-									sp.matrix2numpy(c.subs(subs)),
+									-sp.matrix2numpy(b.subs(subs)),
+									sp.matrix2numpy(c.subs(subs)).T,
 									sp.matrix2numpy(d.subs(subs)))
 		
-    ctrl.bode_plot(sys)
+    ctrl.bode_plot(sys, (1, 0.1), dB=True)
 
