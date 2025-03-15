@@ -554,41 +554,30 @@ import sympy as sp
 
 if res:
     gleichungen = N.Gleichungen()
-    display(gleichungen)
     gl = N.DynGL()
-    display(gl)
 		
     LL = ['L1', 'L2'] # Wahl der Zustände
     l1 = [N.Namen[x].sVar for x in LL]
     l1d = [N.Namen[x].sdVar for x in LL]
     gli = sympy.solve(gl, l1d)
-    display(gli)
+
     f = sp.Matrix([gli[l1d[0]], 
                    gli[l1d[1]]])
     
     u = sp.Matrix([sp.Symbol("Uq_{In}")])
     A = f.jacobian(l1)
     b = f.jacobian(u)
-    #A, b = sympy.linear_eq_to_matrix([x.subs(gli) for x in l1d], l1)
-    display(A)
-    display(b)
-    
-    R2 = sympy.Symbol("R_{R2}")
-    R1 = sympy.Symbol("R_{R1}")
 
     uAgl = gleichungen[sp.Symbol("u_{A}")]
     c = sp.Matrix([uAgl]).jacobian(l1).T
     d = sp.Matrix([uAgl]).jacobian(u)
-        
-    #c = sympy.Matrix([-R2, R2])
-    #d = sympy.Matrix([-R2/ R1])
     
-    subs = {R2:1000, R1: 100,
-						sympy.Symbol("L_{L1}"): 1e1,
-						sympy.Symbol("L_{L2}"): 1,
-						sympy.Symbol("Uq_{In}"):1, # achtung, die saubere lösung wäre jacobian()
-						sympy.Symbol("R_{R3}"): 47,
-						sympy.Symbol("R_{R4}"): 47}
+    subs = {sympy.Symbol("R_{R1}"): 100, 
+            sympy.Symbol("R_{R2}"): 1000,
+			sympy.Symbol("L_{L1}"): 1e1,
+			sympy.Symbol("L_{L2}"): 1,
+			sympy.Symbol("R_{R3}"): 47,
+			sympy.Symbol("R_{R4}"): 47}
     sys = ctrl.ss(sympy.matrix2numpy(A.subs(subs)),
 									sympy.matrix2numpy(b.subs(subs)),
 									sympy.matrix2numpy(c.subs(subs)).T,
