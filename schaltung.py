@@ -522,50 +522,42 @@ class Iverstärker(Objekt):
         return {self.Ltor.Kp.U - self.Ltor.Km.U}
 
 
-# In[6]
+# In[6] Invertierender Verstärker mit L
 from support import Sol
 import control as ctrl
 
 N = Netzwerk()
-KnotenP(N, 'M', 0)
-Knoten(N, 'E')
-Uquelle(N, 'In', 'M', 'E')
+KnotenP(N, 'M', 0) # Masse
+Knoten(N, 'E') 		 # Eingangsknoten
+Uquelle(N, 'In', 'M', 'E') # Eingangs-Spannungsquelle
 
-Knoten(N, 'K')
-Knoten(N, 'A')
-Knoten(N, 'X')
-Knoten(N, 'Y')
+Knoten(N, 'K') # Mittlerer Knoten
+Knoten(N, 'A') # Ausgangsknoten
+Knoten(N, 'X') # Zwischen parallel-und Serienschaltung links
+Knoten(N, 'Y') # Zwischen parallel-und Serienschaltung rechts
 
-Widerstand(N, 'R1', 'E', 'X')
-Widerstand(N, 'R2', 'K', 'Y')
+Widerstand(N, 'R1', 'E', 'X') # parallel zu L1
+Widerstand(N, 'R2', 'K', 'Y') # parallel zu L2
 
-Widerstand(N, 'R3', 'X', 'K')
-Widerstand(N, 'R4', 'Y', 'A')
+Widerstand(N, 'R3', 'X', 'K') # in Serie links
+Widerstand(N, 'R4', 'Y', 'A') # in Serie rechts
 
 Iverstärker(N, 'OPV', 'K', 'M', 'M', 'A')
 
-# Kapazität(N, 'L1', 'X', 'K')
-# Kapazität(N, 'L2', 'Y', 'A')
-
-# Kapazität(N, 'C1', 'E', 'K')
-# Kapazität(N, 'C2', 'K', 'A')
-Induktivität(N, 'L1', 'E', 'X')
-Induktivität(N, 'L2', 'K', 'Y')
+Induktivität(N, 'L1', 'E', 'X') # links
+Induktivität(N, 'L2', 'K', 'Y') # rechts
 
 res = N.Eleverbindungen()
 display(res)
-# if res:
-# display(N.Gleichungen())
-# display(N.DynGL())
 
 import sympy as sp
-import control as ctrl
-import support
+
 if res:
     display(N.Gleichungen())
     gl = N.DynGL()
     display(gl)
-    LL = ['L1', 'L2']
+		
+    LL = ['L1', 'L2'] # Wahl der Zustände
     l1 = [N.Namen[x].sVar for x in LL]
     l1d = [N.Namen[x].sdVar for x in LL]
     gli = sympy.solve(gl, l1d)
@@ -574,23 +566,24 @@ if res:
     display(A)
     display(b)
     
-    R2 = sp.Symbol("R_{R2}")
-    R1 = sp.Symbol("R_{R1}")
+    R2 = sympy.Symbol("R_{R2}")
+    R1 = sympy.Symbol("R_{R1}")
     
-    c = sp.Matrix([-R2, R2])
-    d = sp.Matrix([-R2/ R1])
+    c = sympy.Matrix([-R2, R2])
+    d = sympy.Matrix([-R2/ R1])
     
-    subs = {R2:1000, R1: 100, 
-						sp.Symbol("L_{L1}"): 1e1, 
-						sp.Symbol("L_{L2}"):10e-1,
-						sp.Symbol("Uq_{In}"):1,
-						sp.Symbol("R_{R3}"):47,
-						sp.Symbol("R_{R4}"):47}
-    # sys = ctrl.StateSpace(A.subs(subs), b.subs(subs), c.subs(subs), d.subs(subs))
-    sys = ctrl.ss(sp.matrix2numpy(A.subs(subs)),
-									-sp.matrix2numpy(b.subs(subs)),
-									sp.matrix2numpy(c.subs(subs)).T,
-									sp.matrix2numpy(d.subs(subs)))
+    subs = {R2:1000, R1: 100,
+						sympy.Symbol("L_{L1}"): 1e1,
+						sympy.Symbol("L_{L2}"): 10e-1,
+						sympy.Symbol("Uq_{In}"):1, # achtung, die saubere lösung wäre jacobian()
+						sympy.Symbol("R_{R3}"): 47,
+						sympy.Symbol("R_{R4}"): 47}
+
+    sys = ctrl.ss(sympy.matrix2numpy(A.subs(subs)),
+									sympy.matrix2numpy(b.subs(subs)),
+									sympy.matrix2numpy(c.subs(subs)).T,
+									sympy.matrix2numpy(d.subs(subs)))
 		
-    ctrl.bode_plot(sys, (1, 0.1), dB=True)
+    plt = ctrl.bode_plot(sys, omega_limits=(1, 1e6), dB=True)
+		
 
